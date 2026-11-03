@@ -1,85 +1,71 @@
+from datetime import datetime
+from app.models.product_model import Product
 
-from sqlalchemy.orm import Session
-from sqlalchemy.exc import SQLAlchemyError
+# Temporary in-memory product storage
+products_db = {}
 
-from app.models.product_db_model import ProductDB
+# Auto-increment product ID
+next_product_id = 1
 
 
 # Create Product
-def create_product(db: Session, product_data: dict):
-    try:
-        new_product = ProductDB(**product_data)
+def create_product(product_data: dict):
+    global next_product_id
 
-        db.add(new_product)
-        db.commit()
-        db.refresh(new_product)
+    product = Product(
+        id=next_product_id,
+        **product_data,
+        created_at=datetime.now()
+    )
 
-        return new_product
+    products_db[next_product_id] = product
+    next_product_id += 1
 
-    except SQLAlchemyError:
-        db.rollback()
-        raise
+    return product
 
 
 # Get All Products
-def get_all_products(db: Session, status: str | None = None):
-    query = db.query(ProductDB)
+def get_all_products(
+    category: str | None = None,
+    skip: int = 0,
+    limit: int = 10
+):
+    products = list(products_db.values())
 
-    if status is not None:
-        query = query.filter(ProductDB.status == status)
+    if category:
+        products = [
+            product for product in products
+            if product.category.lower() == category.lower()
+        ]
 
-    return query.all()
+    return products[skip:skip + limit]
 
 
 # Get Product By ID
-def get_product_by_id(db: Session, product_id: int):
-    return (
-        db.query(ProductDB)
-        .filter(ProductDB.id == product_id)
-        .first()
-    )
+def get_product_by_id(product_id: int):
+    return products_db.get(product_id)
 
 
 # Update Product
-def update_product(
-    db: Session,
-    product_id: int,
-    update_data: dict
-):
-    product = get_product_by_id(db, product_id)
+def update_product(product_id: int, update_data: dict):
+    product = products_db.get(product_id)
 
     if product is None:
         return None
 
-    try:
-        for key, value in update_data.items():
-            setattr(product, key, value)
+    for key, value in update_data.items():
+        setattr(product, key, value)
 
-        db.commit()
-        db.refresh(product)
-
-        return product
-
-    except SQLAlchemyError:
-        db.rollback()
-        raise
+    return product
 
 
-# Delete Product (Soft Delete)
-def delete_product(db: Session, product_id: int):
-    product = get_product_by_id(db, product_id)
+# Delete Product
+def delete_product(product_id: int):
+    product = products_db.get(product_id)
 
     if product is None:
         return None
 
-    try:
-        product.status = "Inactive"
+    del products_db[product_id]
 
-        db.commit()
-        db.refresh(product)
-
-        return product
-
-    except SQLAlchemyError:
-        db.rollback()
-        raise
+    return product

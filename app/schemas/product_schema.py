@@ -1,28 +1,34 @@
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict, field_validator
 from typing import Literal
+
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 
 class ProductCreate(BaseModel):
-    name: str = Field(..., min_length=1)
-    description: str | None = None
+    name: str = Field(..., min_length=1, max_length=150)
+    description: str | None = Field(default=None, max_length=1000)
     price: float = Field(..., gt=0)
     stock_quantity: int = Field(..., ge=0)
-    category: str = Field(..., min_length=1)
+    category: str = Field(..., min_length=1, max_length=100)
+    status: Literal["Active", "Inactive"] = "Active"
 
     @field_validator("name", "category")
     @classmethod
     def validate_text(cls, value):
-        if not value.strip():
+        value = value.strip()
+
+        if not value:
             raise ValueError("This field cannot contain only spaces")
-        return value.strip()
+
+        return value
+
 
 class ProductUpdate(BaseModel):
-    name: str | None = Field(default=None, min_length=1)
-    description: str | None = None
+    name: str | None = Field(default=None, min_length=1, max_length=150)
+    description: str | None = Field(default=None, max_length=1000)
     price: float | None = Field(default=None, gt=0)
     stock_quantity: int | None = Field(default=None, ge=0)
-    category: str | None = Field(default=None, min_length=1)
+    category: str | None = Field(default=None, min_length=1, max_length=100)
     status: Literal["Active", "Inactive"] | None = None
 
     @field_validator("name", "category")
@@ -31,10 +37,13 @@ class ProductUpdate(BaseModel):
         if value is None:
             return value
 
-        if not value.strip():
+        value = value.strip()
+
+        if not value:
             raise ValueError("This field cannot contain only spaces")
 
-        return value.strip()
+        return value
+
 
 class ProductResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)

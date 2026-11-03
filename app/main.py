@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.routers import product_router
+from app.routers import product_routes
 
 app = FastAPI(
     title="ShopEase Product Service",
@@ -24,4 +24,4 @@ def health_check():
     }
 
 
-app.include_router(product_router.router)
+app.include_router(product_routes.router)
