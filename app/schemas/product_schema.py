@@ -1,14 +1,21 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, ConfigDict, field_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    ConfigDict,
+    field_validator,
+    FiniteFloat,
+    StrictInt
+)
 
 
 class ProductCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=150)
     description: str | None = Field(default=None, max_length=1000)
-    price: float = Field(..., gt=0)
-    stock_quantity: int = Field(..., ge=0)
+    price: FiniteFloat = Field(..., gt=0)
+    stock_quantity: StrictInt = Field(..., ge=0)
     category: str = Field(..., min_length=1, max_length=100)
     status: Literal["Active", "Inactive"] = "Active"
 
@@ -26,8 +33,8 @@ class ProductCreate(BaseModel):
 class ProductUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=150)
     description: str | None = Field(default=None, max_length=1000)
-    price: float | None = Field(default=None, gt=0)
-    stock_quantity: int | None = Field(default=None, ge=0)
+    price: FiniteFloat | None = Field(default=None, gt=0)
+    stock_quantity: StrictInt | None = Field(default=None, ge=0)
     category: str | None = Field(default=None, min_length=1, max_length=100)
     status: Literal["Active", "Inactive"] | None = None
 
